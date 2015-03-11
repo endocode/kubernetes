@@ -205,7 +205,7 @@ func TestWatchEtcdError(t *testing.T) {
 	fakeClient := NewFakeEtcdClient(t)
 	fakeClient.expectNotFoundGetSet["/some/key"] = struct{}{}
 	fakeClient.WatchImmediateError = fmt.Errorf("immediate error")
-	h := EtcdHelper{fakeClient, codec, versioner}
+	h := EtcdHelper{fakeClient, codec, versioner, ""}
 
 	got := <-h.Watch("/some/key", 4).ResultChan()
 	if got.Type != watch.Error {
@@ -227,7 +227,7 @@ func TestWatch(t *testing.T) {
 	codec := latest.Codec
 	fakeClient := NewFakeEtcdClient(t)
 	fakeClient.expectNotFoundGetSet["/some/key"] = struct{}{}
-	h := EtcdHelper{fakeClient, codec, versioner}
+	h := EtcdHelper{fakeClient, codec, versioner, ""}
 
 	watching := h.Watch("/some/key", 0)
 
@@ -397,7 +397,7 @@ func TestWatchEtcdState(t *testing.T) {
 		for key, value := range testCase.Initial {
 			fakeClient.Data[key] = value
 		}
-		h := EtcdHelper{fakeClient, codec, versioner}
+		h := EtcdHelper{fakeClient, codec, versioner, ""}
 		watching := h.Watch("/somekey/foo", testCase.From)
 		fakeClient.WaitForWatchCompletion()
 
@@ -464,7 +464,7 @@ func TestWatchFromZeroIndex(t *testing.T) {
 	for k, testCase := range testCases {
 		fakeClient := NewFakeEtcdClient(t)
 		fakeClient.Data["/some/key"] = testCase.Response
-		h := EtcdHelper{fakeClient, codec, versioner}
+		h := EtcdHelper{fakeClient, codec, versioner, ""}
 
 		watching := h.Watch("/some/key", 0)
 
@@ -521,7 +521,7 @@ func TestWatchListFromZeroIndex(t *testing.T) {
 			EtcdIndex: 3,
 		},
 	}
-	h := EtcdHelper{fakeClient, codec, versioner}
+	h := EtcdHelper{fakeClient, codec, versioner, ""}
 
 	watching, err := h.WatchList("/some/key", 0, Everything)
 	if err != nil {
@@ -559,7 +559,7 @@ func TestWatchListIgnoresRootKey(t *testing.T) {
 	pod := &api.Pod{ObjectMeta: api.ObjectMeta{Name: "foo"}}
 
 	fakeClient := NewFakeEtcdClient(t)
-	h := EtcdHelper{fakeClient, codec, versioner}
+	h := EtcdHelper{fakeClient, codec, versioner, ""}
 
 	watching, err := h.WatchList("/some/key", 1, Everything)
 	if err != nil {
@@ -610,7 +610,7 @@ func TestWatchFromNotFound(t *testing.T) {
 			ErrorCode: 100,
 		},
 	}
-	h := EtcdHelper{fakeClient, codec, versioner}
+	h := EtcdHelper{fakeClient, codec, versioner, ""}
 
 	watching := h.Watch("/some/key", 0)
 
@@ -633,7 +633,7 @@ func TestWatchFromOtherError(t *testing.T) {
 			ErrorCode: 101,
 		},
 	}
-	h := EtcdHelper{fakeClient, codec, versioner}
+	h := EtcdHelper{fakeClient, codec, versioner, ""}
 
 	watching := h.Watch("/some/key", 0)
 
@@ -661,7 +661,7 @@ func TestWatchFromOtherError(t *testing.T) {
 
 func TestWatchPurposefulShutdown(t *testing.T) {
 	fakeClient := NewFakeEtcdClient(t)
-	h := EtcdHelper{fakeClient, codec, versioner}
+	h := EtcdHelper{fakeClient, codec, versioner, ""}
 	fakeClient.expectNotFoundGetSet["/some/key"] = struct{}{}
 
 	// Test purposeful shutdown

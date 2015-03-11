@@ -18,6 +18,8 @@ package etcd
 
 import (
 	"net/http"
+	"os"
+	"path"
 	"testing"
 	"time"
 
@@ -49,7 +51,7 @@ func (fakeConnectionInfoGetter) GetConnectionInfo(host string) (string, uint, ht
 func newHelper(t *testing.T) (*tools.FakeEtcdClient, tools.EtcdHelper) {
 	fakeEtcdClient := tools.NewFakeEtcdClient(t)
 	fakeEtcdClient.TestIndex = true
-	helper := tools.NewEtcdHelper(fakeEtcdClient, latest.Codec)
+	helper := tools.NewEtcdHelper(fakeEtcdClient, latest.Codec, etcdtest.PathPrefix())
 	return fakeEtcdClient, helper
 }
 
@@ -255,7 +257,8 @@ func TestEtcdUpdateEndpoints(t *testing.T) {
 func TestEtcdGetNodeNotFound(t *testing.T) {
 	ctx := api.NewContext()
 	storage, fakeClient := newStorage(t)
-	fakeClient.Data["/registry/minions/foo"] = tools.EtcdResponseWithError{
+	key := path.Join("/", etcdtest.PathPrefix(), "/registry/minions/foo")
+	fakeClient.Data[key] = tools.EtcdResponseWithError{
 		R: &etcd.Response{
 			Node: nil,
 		},

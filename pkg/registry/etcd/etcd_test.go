@@ -38,12 +38,12 @@ import (
 )
 
 func NewTestEtcdRegistry(client tools.EtcdClient) *Registry {
-	registry := NewRegistry(tools.NewEtcdHelper(client, latest.Codec), nil, nil)
+	registry := NewRegistry(tools.NewEtcdHelper(client, latest.Codec, tools.PathPrefix()), nil, nil)
 	return registry
 }
 
 func NewTestEtcdRegistryWithPods(client tools.EtcdClient) *Registry {
-	helper := tools.NewEtcdHelper(client, latest.Codec)
+	helper := tools.NewEtcdHelper(client, latest.Codec, tools.PathPrefix())
 	podStorage := podetcd.NewStorage(helper, nil)
 	endpointStorage := endpointetcd.NewStorage(helper)
 	registry := NewRegistry(helper, pod.NewRegistry(podStorage.Pod), endpoint.NewRegistry(endpointStorage))
@@ -311,8 +311,10 @@ func TestEtcdWatchController(t *testing.T) {
 func TestEtcdWatchControllersMatch(t *testing.T) {
 	ctx := api.NewDefaultContext()
 	fakeClient := tools.NewFakeEtcdClient(t)
-	fakeClient.ExpectNotFoundGet(etcdgeneric.NamespaceKeyRootFunc(ctx, "/registry/pods"))
 	registry := NewTestEtcdRegistryWithPods(fakeClient)
+	path := etcdgeneric.NamespaceKeyRootFunc(ctx, "/registry/pods")
+	path = tools.AddPrefix(path)
+	fakeClient.ExpectNotFoundGet(etcdgeneric.NamespaceKeyRootFunc(ctx, path))
 	watching, err := registry.WatchControllers(ctx,
 		labels.SelectorFromSet(labels.Set{"name": "foo"}),
 		fields.Everything(),
@@ -536,9 +538,11 @@ func TestEtcdDeleteService(t *testing.T) {
 	ctx := api.NewDefaultContext()
 	fakeClient := tools.NewFakeEtcdClient(t)
 	registry := NewTestEtcdRegistryWithPods(fakeClient)
-	key, _ := makeServiceKey(ctx, "foo")
+	key, _ := etcdgeneric.NamespaceKeyFunc(ctx, "/registry/services/specs", "foo")
+	key = tools.AddPrefix(key)
 	fakeClient.Set(key, runtime.EncodeOrDie(latest.Codec, &api.Service{ObjectMeta: api.ObjectMeta{Name: "foo"}}), 0)
-	endpointsKey, _ := etcdgeneric.NamespaceKeyFunc(ctx, "/registry/services/endpoints", "foo")
+	path, _ := etcdgeneric.NamespaceKeyFunc(ctx, "/registry/services/endpoints", "foo")
+	endpointsKey := tools.AddPrefix(path)
 	fakeClient.Set(endpointsKey, runtime.EncodeOrDie(latest.Codec, &api.Endpoints{ObjectMeta: api.ObjectMeta{Name: "foo"}}), 0)
 
 	err := registry.DeleteService(ctx, "foo")

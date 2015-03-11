@@ -23,6 +23,7 @@ import (
 	"net/http"
 	"net/http/pprof"
 	"net/url"
+	"path"
 	rt "runtime"
 	"strconv"
 	"strings"
@@ -66,6 +67,10 @@ import (
 	"github.com/emicklei/go-restful"
 	"github.com/emicklei/go-restful/swagger"
 	"github.com/golang/glog"
+)
+
+const (
+	DefaultEtcdPathPrefix = "/registry"
 )
 
 // Config is a structure used to configure a Master.
@@ -176,7 +181,7 @@ type Master struct {
 
 // NewEtcdHelper returns an EtcdHelper for the provided arguments or an error if the version
 // is incorrect.
-func NewEtcdHelper(client tools.EtcdGetSet, version string) (helper tools.EtcdHelper, err error) {
+func NewEtcdHelper(client tools.EtcdGetSet, version string, prefix string) (helper tools.EtcdHelper, err error) {
 	if version == "" {
 		version = latest.Version
 	}
@@ -184,7 +189,12 @@ func NewEtcdHelper(client tools.EtcdGetSet, version string) (helper tools.EtcdHe
 	if err != nil {
 		return helper, err
 	}
-	return tools.NewEtcdHelper(client, versionInterfaces.Codec), nil
+	if prefix == "" {
+		prefix = DefaultEtcdPathPrefix
+	} else {
+		prefix = path.Join("/", prefix, DefaultEtcdPathPrefix)
+	}
+	return tools.NewEtcdHelper(client, versionInterfaces.Codec, prefix), nil
 }
 
 // setDefaults fills in any fields not set that are required to have valid data.

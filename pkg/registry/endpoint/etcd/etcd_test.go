@@ -34,7 +34,7 @@ import (
 func newHelper(t *testing.T) (*tools.FakeEtcdClient, tools.EtcdHelper) {
 	fakeEtcdClient := tools.NewFakeEtcdClient(t)
 	fakeEtcdClient.TestIndex = true
-	helper := tools.NewEtcdHelper(fakeEtcdClient, latest.Codec)
+	helper := tools.NewEtcdHelper(fakeEtcdClient, latest.Codec, tools.PathPrefix())
 	return fakeEtcdClient, helper
 }
 
@@ -89,6 +89,7 @@ func TestDelete(t *testing.T) {
 
 	endpoints := validChangedEndpoints()
 	key, _ := storage.KeyFunc(ctx, endpoints.Name)
+	key = tools.AddPrefix(key)
 	createFn := func() runtime.Object {
 		fakeEtcdClient.Data[key] = tools.EtcdResponseWithError{
 			R: &etcd.Response{
@@ -113,6 +114,7 @@ func TestEtcdListEndpoints(t *testing.T) {
 	ctx := api.NewDefaultContext()
 	storage, fakeClient := newStorage(t)
 	key := storage.KeyRootFunc(ctx)
+	key = tools.AddPrefix(key)
 	fakeClient.Data[key] = tools.EtcdResponseWithError{
 		R: &etcd.Response{
 			Node: &etcd.Node{
@@ -154,6 +156,7 @@ func TestEtcdGetEndpoints(t *testing.T) {
 	endpoints := validNewEndpoints()
 	name := endpoints.Name
 	key, _ := storage.KeyFunc(ctx, name)
+	key = tools.AddPrefix(key)
 	fakeClient.Set(key, runtime.EncodeOrDie(latest.Codec, endpoints), 0)
 
 	response, err := fakeClient.Get(key, false, false)
@@ -183,6 +186,7 @@ func TestListEmptyEndpointsList(t *testing.T) {
 	storage, fakeClient := newStorage(t)
 	fakeClient.ChangeIndex = 1
 	key := storage.KeyRootFunc(ctx)
+	key = tools.AddPrefix(key)
 	fakeClient.Data[key] = tools.EtcdResponseWithError{
 		R: &etcd.Response{},
 		E: fakeClient.NewError(tools.EtcdErrorCodeNotFound),
@@ -206,6 +210,7 @@ func TestListEndpointsList(t *testing.T) {
 	storage, fakeClient := newStorage(t)
 	fakeClient.ChangeIndex = 1
 	key := storage.KeyRootFunc(ctx)
+	key = tools.AddPrefix(key)
 	fakeClient.Data[key] = tools.EtcdResponseWithError{
 		R: &etcd.Response{
 			Node: &etcd.Node{
@@ -266,6 +271,7 @@ func TestEtcdUpdateEndpoints(t *testing.T) {
 	endpoints := validChangedEndpoints()
 
 	key, _ := storage.KeyFunc(ctx, "foo")
+	key = tools.AddPrefix(key)
 	fakeClient.Set(key, runtime.EncodeOrDie(latest.Codec, validNewEndpoints()), 0)
 
 	_, _, err := storage.Update(ctx, endpoints)
@@ -295,6 +301,7 @@ func TestDeleteEndpoints(t *testing.T) {
 	endpoints := validNewEndpoints()
 	name := endpoints.Name
 	key, _ := storage.KeyFunc(ctx, name)
+	key = tools.AddPrefix(key)
 	fakeClient.ChangeIndex = 1
 	fakeClient.Data[key] = tools.EtcdResponseWithError{
 		R: &etcd.Response{

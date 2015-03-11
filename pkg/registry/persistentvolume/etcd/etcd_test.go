@@ -17,6 +17,7 @@ limitations under the License.
 package etcd
 
 import (
+	"os"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/api"
@@ -40,7 +41,7 @@ type testRegistry struct {
 func newStorage(t *testing.T) (*REST, *StatusREST, *tools.FakeEtcdClient, tools.EtcdHelper) {
 	fakeEtcdClient := tools.NewFakeEtcdClient(t)
 	fakeEtcdClient.TestIndex = true
-	helper := tools.NewEtcdHelper(fakeEtcdClient, latest.Codec)
+	helper := tools.NewEtcdHelper(fakeEtcdClient, latest.Codec, etcdtest.PathPrefix())
 	storage, statusStorage := NewStorage(helper)
 	return storage, statusStorage, fakeEtcdClient, helper
 }

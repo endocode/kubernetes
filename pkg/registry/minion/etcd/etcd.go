@@ -36,7 +36,7 @@ type REST struct {
 
 // NewStorage returns a RESTStorage object that will work against nodes.
 func NewStorage(h tools.EtcdHelper, connection client.ConnectionInfoGetter) *REST {
-	prefix := "/registry/minions"
+	prefix := "/minions"
 	store := &etcdgeneric.Etcd{
 		NewFunc:     func() runtime.Object { return &api.Node{} },
 		NewListFunc: func() runtime.Object { return &api.NodeList{} },

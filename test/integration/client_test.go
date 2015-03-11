@@ -23,6 +23,7 @@ import (
 	"log"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"reflect"
 	"runtime"
 	"sync"
@@ -45,7 +46,7 @@ func init() {
 }
 
 func RunAMaster(t *testing.T) (*master.Master, *httptest.Server) {
-	helper, err := master.NewEtcdHelper(newEtcdClient(), "v1beta1")
+	helper, err := master.NewEtcdHelper(newEtcdClient(), "v1beta1", etcdtest.PathPrefix())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

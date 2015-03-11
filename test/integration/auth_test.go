@@ -299,7 +299,7 @@ func TestAuthModeAlwaysAllow(t *testing.T) {
 
 	// Set up a master
 
-	helper, err := master.NewEtcdHelper(newEtcdClient(), "v1beta1")
+	helper, err := master.NewEtcdHelper(newEtcdClient(), "v1beta1", etcdtest.PathPrefix())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -405,7 +405,7 @@ func TestAuthModeAlwaysDeny(t *testing.T) {
 
 	// Set up a master
 
-	helper, err := master.NewEtcdHelper(newEtcdClient(), "v1beta1")
+	helper, err := master.NewEtcdHelper(newEtcdClient(), "v1beta1", etcdtest.PathPrefix())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -472,7 +472,7 @@ func TestAliceNotForbiddenOrUnauthorized(t *testing.T) {
 
 	// Set up a master
 
-	helper, err := master.NewEtcdHelper(newEtcdClient(), "v1beta1")
+	helper, err := master.NewEtcdHelper(newEtcdClient(), "v1beta1", etcdtest.PathPrefix())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -561,7 +561,7 @@ func TestBobIsForbidden(t *testing.T) {
 
 	// Set up a master
 
-	helper, err := master.NewEtcdHelper(newEtcdClient(), "v1beta1")
+	helper, err := master.NewEtcdHelper(newEtcdClient(), "v1beta1", etcdtest.PathPrefix())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -622,7 +622,7 @@ func TestUnknownUserIsUnauthorized(t *testing.T) {
 
 	// Set up a master
 
-	helper, err := master.NewEtcdHelper(newEtcdClient(), "v1beta1")
+	helper, err := master.NewEtcdHelper(newEtcdClient(), "v1beta1", etcdtest.PathPrefix())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -699,7 +699,7 @@ func TestNamespaceAuthorization(t *testing.T) {
 
 	// This file has alice and bob in it.
 
-	helper, err := master.NewEtcdHelper(newEtcdClient(), "v1beta1")
+	helper, err := master.NewEtcdHelper(newEtcdClient(), "v1beta1", etcdtest.PathPrefix())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -814,7 +814,7 @@ func TestKindAuthorization(t *testing.T) {
 
 	// Set up a master
 
-	helper, err := master.NewEtcdHelper(newEtcdClient(), "v1beta1")
+	helper, err := master.NewEtcdHelper(newEtcdClient(), "v1beta1", etcdtest.PathPrefix())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
@@ -917,7 +917,7 @@ func TestReadOnlyAuthorization(t *testing.T) {
 
 	// Set up a master
 
-	helper, err := master.NewEtcdHelper(newEtcdClient(), "v1beta1")
+	helper, err := master.NewEtcdHelper(newEtcdClient(), "v1beta1", etcdtest.PathPrefix())
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}

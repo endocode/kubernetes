@@ -39,11 +39,16 @@ const (
 	FAIL
 )
 
-// newStorage creates a REST storage backed by etcd helpers
-func newStorage(t *testing.T) (*REST, *tools.FakeEtcdClient) {
+func newHelper(t *testing.T) (*tools.FakeEtcdClient, tools.EtcdHelper) {
 	fakeEtcdClient := tools.NewFakeEtcdClient(t)
 	fakeEtcdClient.TestIndex = true
-	h := tools.NewEtcdHelper(fakeEtcdClient, latest.Codec)
+	helper := tools.NewEtcdHelper(fakeEtcdClient, latest.Codec, tools.PathPrefix())
+	return fakeEtcdClient, helper
+}
+
+// newStorage creates a REST storage backed by etcd helpers
+func newStorage(t *testing.T) (*REST, *tools.FakeEtcdClient) {
+	fakeEtcdClient, h := newHelper(t)
 	storage := NewREST(h)
 	return storage, fakeEtcdClient
 }
@@ -107,6 +112,7 @@ func TestEtcdCreateController(t *testing.T) {
 		t.Errorf("unexpected error: %v", err)
 	}
 	key, _ := makeControllerKey(ctx, validController.Name)
+	key = tools.AddPrefix(key)
 	resp, err := fakeClient.Get(key, false, false)
 	if err != nil {
 		t.Fatalf("Unexpected error %v", err)
@@ -126,6 +132,7 @@ func TestEtcdCreateControllerAlreadyExisting(t *testing.T) {
 	ctx := api.NewDefaultContext()
 	storage, fakeClient := newStorage(t)
 	key, _ := makeControllerKey(ctx, validController.Name)
+	key = tools.AddPrefix(key)
 	fakeClient.Set(key, runtime.EncodeOrDie(latest.Codec, &validController), 0)
 
 	_, err := storage.Create(ctx, &validController)
@@ -201,6 +208,7 @@ func TestEtcdGetController(t *testing.T) {
 	ctx := api.NewDefaultContext()
 	storage, fakeClient := newStorage(t)
 	key, _ := makeControllerKey(ctx, validController.Name)
+	key = tools.AddPrefix(key)
 	fakeClient.Set(key, runtime.EncodeOrDie(latest.Codec, &validController), 0)
 	ctrl, err := storage.Get(ctx, validController.Name)
 	if err != nil {
@@ -284,6 +292,9 @@ func TestEtcdGetControllerDifferentNamespace(t *testing.T) {
 	key1, _ := makeControllerKey(ctx1, validController.Name)
 	key2, _ := makeControllerKey(ctx2, validController.Name)
 
+	key1 = tools.AddPrefix(key1)
+	key2 = tools.AddPrefix(key2)
+
 	fakeClient.Set(key1, runtime.EncodeOrDie(latest.Codec, &validController), 0)
 	otherNsController := validController
 	otherNsController.Namespace = otherNs
@@ -319,6 +330,8 @@ func TestEtcdGetControllerNotFound(t *testing.T) {
 	ctx := api.NewDefaultContext()
 	storage, fakeClient := newStorage(t)
 	key, _ := makeControllerKey(ctx, validController.Name)
+	key = tools.AddPrefix(key)
+
 	fakeClient.Data[key] = tools.EtcdResponseWithError{
 		R: &etcd.Response{
 			Node: nil,
@@ -338,6 +351,7 @@ func TestEtcdUpdateController(t *testing.T) {
 	ctx := api.NewDefaultContext()
 	storage, fakeClient := newStorage(t)
 	key, _ := makeControllerKey(ctx, validController.Name)
+	key = tools.AddPrefix(key)
 
 	// set a key, then retrieve the current resource version and try updating it
 	resp, _ := fakeClient.Set(key, runtime.EncodeOrDie(latest.Codec, &validController), 0)
@@ -362,6 +376,8 @@ func TestEtcdDeleteController(t *testing.T) {
 	ctx := api.NewDefaultContext()
 	storage, fakeClient := newStorage(t)
 	key, _ := makeControllerKey(ctx, validController.Name)
+	key = tools.AddPrefix(key)
+
 	fakeClient.Set(key, runtime.EncodeOrDie(latest.Codec, &validController), 0)
 	obj, err := storage.Delete(ctx, validController.Name, nil)
 	if err != nil {
@@ -384,6 +400,7 @@ func TestEtcdListControllers(t *testing.T) {
 	storage, fakeClient := newStorage(t)
 	ctx := api.NewDefaultContext()
 	key := makeControllerListKey(ctx)
+	key = tools.AddPrefix(key)
 	controller := validController
 	controller.Name = "bar"
 	fakeClient.Data[key] = tools.EtcdResponseWithError{
@@ -415,6 +432,8 @@ func TestEtcdListControllersNotFound(t *testing.T) {
 	storage, fakeClient := newStorage(t)
 	ctx := api.NewDefaultContext()
 	key := makeControllerListKey(ctx)
+	key = tools.AddPrefix(key)
+
 	fakeClient.Data[key] = tools.EtcdResponseWithError{
 		R: &etcd.Response{},
 		E: tools.EtcdErrorNotFound,
@@ -433,6 +452,7 @@ func TestEtcdListControllersLabelsMatch(t *testing.T) {
 	storage, fakeClient := newStorage(t)
 	ctx := api.NewDefaultContext()
 	key := makeControllerListKey(ctx)
+	key = tools.AddPrefix(key)
 
 	controller := validController
 	controller.Labels = map[string]string{"k": "v"}
@@ -680,13 +700,16 @@ func TestCreate(t *testing.T) {
 }
 
 func TestDelete(t *testing.T) {
+	ctx := api.NewDefaultContext()
 	storage, fakeClient := newStorage(t)
 	test := resttest.New(t, storage, fakeClient.SetError)
+	key, _ := makeControllerKey(ctx, validController.Name)
+	key = tools.AddPrefix(key)
 
 	createFn := func() runtime.Object {
 		rc := validController
 		rc.ResourceVersion = "1"
-		fakeClient.Data["/registry/controllers/default/foo"] = tools.EtcdResponseWithError{
+		fakeClient.Data[key] = tools.EtcdResponseWithError{
 			R: &etcd.Response{
 				Node: &etcd.Node{
 					Value:         runtime.EncodeOrDie(latest.Codec, &rc),
@@ -699,7 +722,7 @@ func TestDelete(t *testing.T) {
 	gracefulSetFn := func() bool {
 		// If the controller is still around after trying to delete either the delete
 		// failed, or we're deleting it gracefully.
-		if fakeClient.Data["/registry/controllers/default/foo"].R.Node != nil {
+		if fakeClient.Data[key].R.Node != nil {
 			return true
 		}
 		return false

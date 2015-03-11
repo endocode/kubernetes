@@ -52,6 +52,7 @@ KUBE_RACE=${KUBE_RACE:-}   # use KUBE_RACE="-race" to enable race testing
 KUBE_GOVERALLS_BIN=${KUBE_GOVERALLS_BIN:-}
 # Comma separated list of API Versions that should be tested.
 KUBE_TEST_API_VERSIONS=${KUBE_TEST_API_VERSIONS:-"v1beta1,v1beta3"}
+ETCD_CUSTOM_PREFIX="kubernetes.io"
 
 kube::test::usage() {
   kube::log::usage_from_stdin <<EOF
@@ -204,7 +205,11 @@ reportCoverageToCoveralls() {
 IFS=',' read -a apiVersions <<< "${KUBE_TEST_API_VERSIONS}"
 for apiVersion in "${apiVersions[@]}"; do
   echo "Running tests for APIVersion: $apiVersion"
-  KUBE_API_VERSION="${apiVersion}" runTests "$@"
+  KUBE_API_VERSION="${apiVersion}"
+  echo "Using empty etcd path prefix"
+  ETCD_PREFIX="" runTests "$@"
+  echo "Using custom etcd path prefix: ${ETCD_CUSTOM_PREFIX}"
+  ETCD_PREFIX=${ETCD_CUSTOM_PREFIX} runTests "$@"
 done
 
 # We might run the tests for multiple versions, but we want to report only

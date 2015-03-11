@@ -17,6 +17,8 @@ limitations under the License.
 package etcd
 
 import (
+	"os"
+	"path"
 	"testing"
 
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/api"
@@ -35,7 +37,7 @@ import (
 func newHelper(t *testing.T) (*tools.FakeEtcdClient, tools.EtcdHelper) {
 	fakeEtcdClient := tools.NewFakeEtcdClient(t)
 	fakeEtcdClient.TestIndex = true
-	helper := tools.NewEtcdHelper(fakeEtcdClient, latest.Codec)
+	helper := tools.NewEtcdHelper(fakeEtcdClient, latest.Codec, etcdtest.PathPrefix())
 	return fakeEtcdClient, helper
 }
 
@@ -102,7 +104,12 @@ func TestCreateSetsFields(t *testing.T) {
 	}
 
 	actual := &api.Namespace{}
-	if err := helper.ExtractObj("/registry/namespaces/foo", actual, false); err != nil {
+	ctx := api.NewDefaultContext()
+	key, err := storage.Etcd.KeyFunc(ctx, "foo")
+	if err != nil {
+		t.Fatalf("unexpected key error: %v", err)
+	}
+	if err := helper.ExtractObj(key, actual, false); err != nil {
 		t.Fatalf("unexpected extraction error: %v", err)
 	}
 	if actual.Name != namespace.Name {
@@ -119,7 +126,8 @@ func TestCreateSetsFields(t *testing.T) {
 func TestListEmptyNamespaceList(t *testing.T) {
 	fakeEtcdClient, helper := newHelper(t)
 	fakeEtcdClient.ChangeIndex = 1
-	fakeEtcdClient.Data["/registry/namespaces"] = tools.EtcdResponseWithError{
+	key := path.Join("/", etcdtest.PathPrefix(), "/registry/namespaces")
+	fakeEtcdClient.Data[key] = tools.EtcdResponseWithError{
 		R: &etcd.Response{},
 		E: fakeEtcdClient.NewError(tools.EtcdErrorCodeNotFound),
 	}
@@ -139,7 +147,8 @@ func TestListEmptyNamespaceList(t *testing.T) {
 
 func TestListNamespaceList(t *testing.T) {
 	fakeEtcdClient, helper := newHelper(t)
-	fakeEtcdClient.Data["/registry/namespaces"] = tools.EtcdResponseWithError{
+	key := path.Join("/", etcdtest.PathPrefix(), "/registry/namespaces")
+	fakeEtcdClient.Data[key] = tools.EtcdResponseWithError{
 		R: &etcd.Response{
 			Node: &etcd.Node{
 				Nodes: []*etcd.Node{
@@ -177,7 +186,8 @@ func TestListNamespaceList(t *testing.T) {
 
 func TestListNamespaceListSelection(t *testing.T) {
 	fakeEtcdClient, helper := newHelper(t)
-	fakeEtcdClient.Data["/registry/namespaces"] = tools.EtcdResponseWithError{
+	key := path.Join("/", etcdtest.PathPrefix(), "/registry/namespaces")
+	fakeEtcdClient.Data[key] = tools.EtcdResponseWithError{
 		R: &etcd.Response{
 			Node: &etcd.Node{
 				Nodes: []*etcd.Node{
@@ -275,15 +285,19 @@ func TestNamespaceDecode(t *testing.T) {
 func TestGet(t *testing.T) {
 	expect := validNewNamespace()
 	expect.Status.Phase = api.NamespaceActive
-	fakeEtcdClient, helper := newHelper(t)
-	fakeEtcdClient.Data["/registry/namespaces/foo"] = tools.EtcdResponseWithError{
+	storage, fakeEtcdClient, _ := newStorage(t)
+	ctx := api.NewDefaultContext()
+	key, err := storage.Etcd.KeyFunc(ctx, "foo")
+	if err != nil {
+		t.Fatalf("unexpected key error: %v", err)
+	}
+	fakeEtcdClient.Data[key] = tools.EtcdResponseWithError{
 		R: &etcd.Response{
 			Node: &etcd.Node{
 				Value: runtime.EncodeOrDie(latest.Codec, expect),
 			},
 		},
 	}
-	storage, _, _ := NewStorage(helper)
 	obj, err := storage.Get(api.NewContext(), "foo")
 	namespace := obj.(*api.Namespace)
 	if err != nil {
@@ -299,7 +313,8 @@ func TestGet(t *testing.T) {
 func TestDeleteNamespace(t *testing.T) {
 	fakeEtcdClient, helper := newHelper(t)
 	fakeEtcdClient.ChangeIndex = 1
-	fakeEtcdClient.Data["/registry/namespaces/foo"] = tools.EtcdResponseWithError{
+	key := path.Join("/", etcdtest.PathPrefix(), "/registry/namespaces/foo")
+	fakeEtcdClient.Data[key] = tools.EtcdResponseWithError{
 		R: &etcd.Response{
 			Node: &etcd.Node{
 				Value: runtime.EncodeOrDie(latest.Codec, &api.Namespace{

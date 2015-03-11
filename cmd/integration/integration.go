@@ -50,6 +50,7 @@ import (
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/master"
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/probe"
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/service"
+	"github.com/GoogleCloudPlatform/kubernetes/pkg/tools"
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/util"
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/util/wait"
 	"github.com/GoogleCloudPlatform/kubernetes/pkg/volume/empty_dir"
@@ -161,7 +162,7 @@ func startComponents(firstManifestURL, secondManifestURL, apiVersion string) (st
 
 	cl := client.NewOrDie(&client.Config{Host: apiServer.URL, Version: apiVersion})
 
-	helper, err := master.NewEtcdHelper(etcdClient, "")
+	helper, err := master.NewEtcdHelper(etcdClient, "", tools.PathPrefix())
 	if err != nil {
 		glog.Fatalf("Unable to get etcd helper: %v", err)
 	}

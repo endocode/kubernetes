@@ -17,6 +17,8 @@ limitations under the License.
 package limitrange
 
 import (
+	"os"
+	"path"
 	"reflect"
 	"testing"
 
@@ -36,7 +38,7 @@ import (
 func NewTestLimitRangeEtcdRegistry(t *testing.T) (*tools.FakeEtcdClient, generic.Registry) {
 	f := tools.NewFakeEtcdClient(t)
 	f.TestIndex = true
-	h := tools.NewEtcdHelper(f, testapi.Codec())
+	h := tools.NewEtcdHelper(f, testapi.Codec(), etcdtest.PathPrefix())
 	return f, NewEtcdRegistry(h)
 }
 
@@ -81,7 +83,8 @@ func TestLimitRangeCreate(t *testing.T) {
 
 	ctx := api.NewDefaultContext()
 	key := "foo"
-	path, err := etcdgeneric.NamespaceKeyFunc(ctx, "/registry/limitranges", key)
+	prefix := path.Join("/", etcdtest.PathPrefix(), "/registry/limitranges")
+	path, err := etcdgeneric.NamespaceKeyFunc(ctx, prefix, key)
 	if err != nil {
 		t.Errorf("Unexpected error: %v", err)
 	}
