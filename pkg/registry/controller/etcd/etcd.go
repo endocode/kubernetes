@@ -61,6 +61,9 @@ func NewREST(h tools.EtcdHelper) *REST {
 		PredicateFunc: func(label labels.Selector, field fields.Selector) generic.Matcher {
 			return controller.MatchController(label, field)
 		},
+		DeleteCollectionFunc: func(ctx api.Context) (runtime.Object, error) {
+			return etcdgeneric.DeleteCollectionPerNamespaceFunc()(ctx, h, controllerPrefix)
+		},
 		EndpointName: "replicationControllers",
 
 		// Used to validate controller creation

@@ -82,6 +82,9 @@ func NewTestGenericEtcdRegistry(t *testing.T) (*tools.FakeEtcdClient, *Etcd) {
 		KeyFunc: func(ctx api.Context, id string) (string, error) {
 			return path.Join(podPrefix, id), nil
 		},
+		DeleteCollectionFunc: func(ctx api.Context) (runtime.Object, error) {
+			return nil, h.Delete(podPrefix, true)
+		},
 		ObjectNameFunc: func(obj runtime.Object) (string, error) { return obj.(*api.Pod).Name, nil },
 		Helper:         h,
 	}
@@ -673,6 +676,58 @@ func TestEtcdDelete(t *testing.T) {
 		path := etcdtest.AddPrefix("pods/foo")
 		fakeClient.Data[path] = item.existing
 		obj, err := registry.Delete(api.NewContext(), key, nil)
+		if !item.errOK(err) {
+			t.Errorf("%v: unexpected error: %v (%#v)", name, err, obj)
+		}
+
+		if item.expect.E != nil {
+			item.expect.E.(*etcd.EtcdError).Index = fakeClient.ChangeIndex
+		}
+		if e, a := item.expect, fakeClient.Data[path]; !api.Semantic.DeepDerivative(e, a) {
+			t.Errorf("%v:\n%s", name, util.ObjectDiff(e, a))
+		}
+	}
+}
+
+func TestEtcdDeleteCollection(t *testing.T) {
+	podA := &api.Pod{
+		ObjectMeta: api.ObjectMeta{Name: "foo"},
+		Spec:       api.PodSpec{Host: "machine"},
+	}
+
+	nodeWithPodA := tools.EtcdResponseWithError{
+		R: &etcd.Response{
+			Node: &etcd.Node{
+				Value:         runtime.EncodeOrDie(testapi.Codec(), podA),
+				ModifiedIndex: 1,
+				CreatedIndex:  1,
+			},
+		},
+		E: nil,
+	}
+
+	emptyNode := tools.EtcdResponseWithError{
+		R: &etcd.Response{},
+		E: tools.EtcdErrorNotFound,
+	}
+
+	table := map[string]struct {
+		existing tools.EtcdResponseWithError
+		expect   tools.EtcdResponseWithError
+		errOK    func(error) bool
+	}{
+		"normal": {
+			existing: nodeWithPodA,
+			expect:   emptyNode,
+			errOK:    func(err error) bool { return err == nil },
+		},
+	}
+
+	for name, item := range table {
+		fakeClient, registry := NewTestGenericEtcdRegistry(t)
+		path := etcdtest.AddPrefix("pods/foo")
+		fakeClient.Data[path] = item.existing
+		obj, err := registry.DeleteCollection(api.NewContext())
 		if !item.errOK(err) {
 			t.Errorf("%v: unexpected error: %v (%#v)", name, err, obj)
 		}

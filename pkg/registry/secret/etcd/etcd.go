@@ -52,6 +52,9 @@ func NewStorage(h tools.EtcdHelper) *REST {
 		PredicateFunc: func(label labels.Selector, field fields.Selector) generic.Matcher {
 			return secret.Matcher(label, field)
 		},
+		DeleteCollectionFunc: func(ctx api.Context) (runtime.Object, error) {
+			return etcdgeneric.DeleteCollectionPerNamespaceFunc()(ctx, h, prefix)
+		},
 		EndpointName: "secrets",
 
 		Helper: h,

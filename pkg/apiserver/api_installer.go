@@ -154,6 +154,7 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 	getterWithOptions, isGetterWithOptions := storage.(rest.GetterWithOptions)
 	deleter, isDeleter := storage.(rest.Deleter)
 	gracefulDeleter, isGracefulDeleter := storage.(rest.GracefulDeleter)
+	_, isCollectionDeleter := storage.(rest.CollectionDeleter)
 	updater, isUpdater := storage.(rest.Updater)
 	patcher, isPatcher := storage.(rest.Patcher)
 	watcher, isWatcher := storage.(rest.Watcher)
@@ -265,6 +266,7 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 		// Handler for standard REST verbs (GET, PUT, POST and DELETE).
 		actions = appendIf(actions, action{"LIST", resourcePath, resourceParams, namer}, isLister)
 		actions = appendIf(actions, action{"POST", resourcePath, resourceParams, namer}, isCreater)
+		actions = appendIf(actions, action{"DELETE", resourcePath, resourceParams, namer}, isCollectionDeleter)
 		actions = appendIf(actions, action{"WATCHLIST", "watch/" + resourcePath, resourceParams, namer}, allowWatchList)
 
 		actions = appendIf(actions, action{"GET", itemPath, nameParams, namer}, isGetter)
@@ -303,6 +305,7 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 
 			actions = appendIf(actions, action{"LIST", resourcePath, resourceParams, namer}, isLister)
 			actions = appendIf(actions, action{"POST", resourcePath, resourceParams, namer}, isCreater)
+			actions = appendIf(actions, action{"DELETE", resourcePath, resourceParams, namer}, isCollectionDeleter)
 			// DEPRECATED
 			actions = appendIf(actions, action{"WATCHLIST", "watch/" + resourcePath, resourceParams, namer}, allowWatchList)
 
@@ -349,6 +352,7 @@ func (a *APIInstaller) registerResourceHandlers(path string, storage rest.Storag
 			actions = appendIf(actions, action{"LIST", resourcePath, resourceParams, namer}, isLister)
 			actions = appendIf(actions, action{"POST", resourcePath, resourceParams, namer}, isCreater)
 			actions = appendIf(actions, action{"WATCHLIST", "watch/" + resourcePath, resourceParams, namer}, allowWatchList)
+			actions = appendIf(actions, action{"DELETE", resourcePath, resourceParams, namer}, isCollectionDeleter)
 
 			actions = appendIf(actions, action{"GET", itemPath, nameParams, namer}, isGetter)
 			if getSubpath {

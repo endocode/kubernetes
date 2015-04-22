@@ -71,6 +71,11 @@ func (c *FakeEvents) Delete(name string) error {
 	return err
 }
 
+func (c *FakeEvents) DeleteAll() error {
+	_, err := c.Fake.Invokes(FakeAction{Action: "delete-all-event"}, &api.Event{})
+	return err
+}
+
 func (c *FakeEvents) GetFieldSelector(involvedObjectName, involvedObjectNamespace, involvedObjectKind, involvedObjectUID *string) fields.Selector {
 	c.Fake.Actions = append(c.Fake.Actions, FakeAction{Action: "get-field-selector"})
 	return fields.Everything()

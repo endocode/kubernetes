@@ -90,15 +90,17 @@ func TestSyncNamespaceThatIsTerminating(t *testing.T) {
 	}
 	// TODO: Reuse the constants for all these strings from testclient
 	expectedActionSet := util.NewStringSet(
-		testclient.ListControllerAction,
-		"list-services",
-		"list-pods",
-		"list-resourceQuotas",
-		"list-secrets",
-		"list-limitRanges",
-		"list-events",
-		"finalize-namespace",
-		"delete-namespace")
+		"delete-namespace",
+		"delete-all-service",
+		"delete-replicationController",
+		"delete-all-pods",
+		"delete-all-secret",
+		"delete-all-persistentVolumeClaims",
+		"delete-all-limitRange",
+		"delete-all-resourceQuota",
+		"delete-all-event",
+		"list-serviceaccounts",
+		"finalize-namespace")
 	actionSet := util.NewStringSet()
 	for i := range mockClient.Actions {
 		actionSet.Insert(mockClient.Actions[i].Action)

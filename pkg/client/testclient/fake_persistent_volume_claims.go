@@ -43,6 +43,11 @@ func (c *FakePersistentVolumeClaims) Delete(name string) error {
 	return err
 }
 
+func (c *FakePersistentVolumeClaims) DeleteAll() error {
+	_, err := c.Fake.Invokes(FakeAction{Action: "delete-all-persistentVolumeClaims"}, &api.PersistentVolumeClaim{})
+	return err
+}
+
 func (c *FakePersistentVolumeClaims) Create(claim *api.PersistentVolumeClaim) (*api.PersistentVolumeClaim, error) {
 	obj, err := c.Fake.Invokes(FakeAction{Action: "create-persistentVolumeClaims"}, &api.PersistentVolumeClaim{})
 	return obj.(*api.PersistentVolumeClaim), err

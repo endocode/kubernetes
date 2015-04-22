@@ -45,6 +45,11 @@ func (c *FakeResourceQuotas) Delete(name string) error {
 	return err
 }
 
+func (c *FakeResourceQuotas) DeleteAll() error {
+	_, err := c.Fake.Invokes(FakeAction{Action: "delete-all-resourceQuota"}, &api.ResourceQuota{})
+	return err
+}
+
 func (c *FakeResourceQuotas) Create(resourceQuota *api.ResourceQuota) (*api.ResourceQuota, error) {
 	obj, err := c.Fake.Invokes(FakeAction{Action: "create-resourceQuota", Value: resourceQuota}, &api.ResourceQuota{})
 	return obj.(*api.ResourceQuota), err

@@ -76,6 +76,10 @@ type Etcd struct {
 	// Returns a matcher corresponding to the provided labels and fields.
 	PredicateFunc func(label labels.Selector, field fields.Selector) generic.Matcher
 
+	// Used to delete entire collections of resources (e.g. when calling
+	// 'DELETE /api/v1beta3/namespaces/foo/pods'
+	DeleteCollectionFunc func(ctx api.Context) (runtime.Object, error)
+
 	// Called on all objects returned from the underlying store, after
 	// the exit hooks are invoked. Decorators are intended for integrations
 	// that are above etcd and should only be used for specific cases where
@@ -125,6 +129,26 @@ func NamespaceKeyFunc(ctx api.Context, prefix string, name string) (string, erro
 	}
 	key = key + "/" + name
 	return key, nil
+}
+
+// Default function for removing all resources of a type.
+func DeleteCollectionPerNamespaceFunc() func(api.Context, tools.EtcdHelper, string) (runtime.Object, error) {
+	return func(ctx api.Context, h tools.EtcdHelper, prefix string) (runtime.Object, error) {
+		ns, ok := api.NamespaceFrom(ctx)
+		if !ok || len(ns) == 0 {
+			return nil, kubeerr.NewBadRequest("Namespace parameter required.")
+		}
+
+		if err := h.Delete(NamespaceKeyRootFunc(ctx, prefix), true); err != nil {
+			return &api.Status{Status: api.StatusFailure}, err
+		}
+		return &api.Status{Status: api.StatusSuccess}, nil
+	}
+}
+
+// Function for resource types which do not support removing all resources.
+func DeleteCollectionNotSupportedFunc(resourceType string) error {
+	return kubeerr.NewMethodNotSupported(resourceType, "DeleteCollection")
 }
 
 // New implements RESTStorage
@@ -396,6 +420,10 @@ func (e *Etcd) Delete(ctx api.Context, name string, options *api.DeleteOptions) 
 		return nil, etcderr.InterpretDeleteError(err, e.EndpointName, name)
 	}
 	return e.finalizeDelete(out, true)
+}
+
+func (e *Etcd) DeleteCollection(ctx api.Context) (runtime.Object, error) {
+	return e.DeleteCollectionFunc(ctx)
 }
 
 func (e *Etcd) finalizeDelete(obj runtime.Object, runHooks bool) (runtime.Object, error) {

@@ -43,6 +43,9 @@ func NewEtcdRegistry(h tools.EtcdHelper) generic.Registry {
 			KeyFunc: func(ctx api.Context, id string) (string, error) {
 				return etcdgeneric.NamespaceKeyFunc(ctx, prefix, id)
 			},
+			DeleteCollectionFunc: func(ctx api.Context) (runtime.Object, error) {
+				return etcdgeneric.DeleteCollectionPerNamespaceFunc()(ctx, h, prefix)
+			},
 			Helper: h,
 		},
 	}

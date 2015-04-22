@@ -50,6 +50,9 @@ func NewStorage(h tools.EtcdHelper) (*REST, *StatusREST) {
 		PredicateFunc: func(label labels.Selector, field fields.Selector) generic.Matcher {
 			return resourcequota.MatchResourceQuota(label, field)
 		},
+		DeleteCollectionFunc: func(ctx api.Context) (runtime.Object, error) {
+			return etcdgeneric.DeleteCollectionPerNamespaceFunc()(ctx, h, prefix)
+		},
 		EndpointName: "resourcequotas",
 
 		Helper: h,

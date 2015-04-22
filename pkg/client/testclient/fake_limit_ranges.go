@@ -45,6 +45,11 @@ func (c *FakeLimitRanges) Delete(name string) error {
 	return err
 }
 
+func (c *FakeLimitRanges) DeleteAll() error {
+	_, err := c.Fake.Invokes(FakeAction{Action: "delete-all-limitRange"}, &api.LimitRange{})
+	return err
+}
+
 func (c *FakeLimitRanges) Create(limitRange *api.LimitRange) (*api.LimitRange, error) {
 	obj, err := c.Fake.Invokes(FakeAction{Action: "create-limitRange"}, &api.LimitRange{})
 	return obj.(*api.LimitRange), err

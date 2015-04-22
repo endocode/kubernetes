@@ -47,6 +47,9 @@ func NewEtcdRegistry(h tools.EtcdHelper, ttl uint64) generic.Registry {
 			TTLFunc: func(runtime.Object, bool) (uint64, error) {
 				return ttl, nil
 			},
+			DeleteCollectionFunc: func(ctx api.Context) (runtime.Object, error) {
+				return etcdgeneric.DeleteCollectionPerNamespaceFunc()(ctx, h, prefix)
+			},
 			Helper: h,
 		},
 	}
