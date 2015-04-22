@@ -85,10 +85,13 @@ KUBELET_PID=$!
 
 kube::util::wait_for_url "http://127.0.0.1:${KUBELET_HEALTHZ_PORT}/healthz" "kubelet: " 0.2 25
 
+ADMISSION_CONTROL=NamespaceAutoProvision
+
 # Start kube-apiserver
 kube::log::status "Starting kube-apiserver"
 "${KUBE_OUTPUT_HOSTBIN}/kube-apiserver" \
   --address="127.0.0.1" \
+  --admission_control="${ADMISSION_CONTROL}" \
   --public_address_override="127.0.0.1" \
   --port="${API_PORT}" \
   --etcd_servers="http://${ETCD_HOST}:${ETCD_PORT}" \
@@ -346,6 +349,8 @@ for version in "${kube_api_versions[@]}"; do
   kubectl create "${kube_flags[@]}" --namespace=other -f examples/limitrange/valid-pod.json
   # Post-condition: valid-pod POD is running
   kube::test::get_object_assert 'pods --namespace=other' "{{range.items}}{{$id_field}}:{{end}}" 'valid-pod:'
+  # Post-condition: there are now 2 namespaces (default and other)
+  kube::test::get_object_assert namespaces "{{range.items}}{{$id_field}}:{{end}}" 'default:other:'
 
   ### Delete POD valid-pod in specific namespace
   # Pre-condition: valid-pod POD is running
@@ -355,7 +360,22 @@ for version in "${kube_api_versions[@]}"; do
   # Post-condition: no POD is running
   kube::test::get_object_assert 'pods --namespace=other' "{{range.items}}{{$id_field}}:{{end}}" ''
 
-
+  ### Delete both namespace and pods within that namespace
+  # Pre-condition: there exists an 'other' namespace (other)
+  kube::test::get_object_assert namespaces "{{range.items}}{{$id_field}}:{{end}}" 'default:other:'
+  # Create pod for namespace
+  kubectl create "${kube_flags[@]}" --namespace=other -f examples/limitrange/valid-pod.json
+  # Command
+  kubectl delete "${kube_flags[@]}" namespace other
+  # Post-condition: pod is gone
+  kube::test::get_object_assert 'pods --namespace=other' "{{range.items}}{{$id_field}}:{{end}}" ''
+  # Post-condition: namespace is gone
+  kube::test::get_object_assert namespaces "{{range.items}}{{$id_field}}:{{end}}" 'default:'
+  # Post-condition: namespace folder should be removed from etcd
+  #find_other_namespace=$(etcdctl ls /registry/pods/)
+  #echo "$find_other_namespace"
+  #for d in $find_other_namespace; do [ $d != "/registry/pods/other" ]; done
+  
   ############
   # Services #
   ############

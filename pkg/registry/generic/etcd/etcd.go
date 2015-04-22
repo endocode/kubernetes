@@ -398,6 +398,11 @@ func (e *Etcd) Delete(ctx api.Context, name string, options *api.DeleteOptions) 
 	return e.finalizeDelete(out, true)
 }
 
+// TODO
+func (e *Etcd) DeleteCollection(namespace string) (runtime.Object, error) {
+	return nil, nil
+}
+
 func (e *Etcd) finalizeDelete(obj runtime.Object, runHooks bool) (runtime.Object, error) {
 	if runHooks && e.AfterDelete != nil {
 		if err := e.AfterDelete(obj); err != nil {
