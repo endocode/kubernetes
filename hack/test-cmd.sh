@@ -556,6 +556,9 @@ __EOF__
   # Post-condition: Only the default kubernetes services are running
   kube::test::get_object_assert services "{{range.items}}{{$id_field}}:{{end}}" 'kubernetes:'
 
+  kubectl create -f examples/guestbook/redis-master-service.json "${kube_flags[@]}"
+  kubectl diff -f examples/guestbook/redis-master-service.json "${kube_flags[@]}"
+  kubectl delete services redis-master "${kube_flags[@]}"
 
   ###########################
   # Replication controllers #
